@@ -11,9 +11,15 @@ type Situation = "kids" | "pair" | "single";
 type CashflowTier = "LOW" | "MID" | "HIGH";
 type StabilityTier = "LOW" | "MID" | "HIGH";
 type LifeLoadTier = "LIGHT" | "MID" | "HEAVY";
-type EndingGroup = "ne" | "kana" | "kamo" | "nanda" | "tte" | "toOmou";
+type EndingGroup = "ne" | "kana" | "kamo" | "nanda" | "toOmou";
 
 type Sentence = { text: string; ending: EndingGroup };
+
+type OtherIntent = {
+  keyword: string;
+  category: "travel" | "career" | "home" | "health" | "dream" | "skill" | "other";
+  difficulty: 1 | 2 | 3;
+};
 
 const GOAL_CODE: Record<GoalKey, number> = {
   entrepreneur: 1,
@@ -87,6 +93,7 @@ const PLAN_BY_GOAL: Record<
   }
 };
 
+const STRAINED_WORDS = ["ギリギリ", "余裕がない", "苦しい", "しんどい", "厳しい"];
 const DENYLIST_PATTERN =
   /(ねかな|かなかも|かなって感じ|かもかな|感じるなんだ|んだって感じ|ねって感じ)/;
 
@@ -118,6 +125,12 @@ function goalKeyword(input: LetterInput): string {
 }
 
 function computeCashflowTier(projection?: LetterProjection | null): CashflowTier {
+  const tier = (projection as { life_quality_tier?: number } | null)?.life_quality_tier;
+  if (typeof tier === "number") {
+    if (tier <= 2) return "LOW";
+    if (tier === 3) return "MID";
+    return "HIGH";
+  }
   if (!projection) return "MID";
   const high = projection.monthly_surplus_est_high ?? 0;
   if (high <= 0) return "LOW";
@@ -145,11 +158,21 @@ function computeLifeLoadTier(input: LetterInput): LifeLoadTier {
   return "HEAVY";
 }
 
-function buildScenarioKey(input: LetterInput, projection?: LetterProjection | null): string {
+function getLifeQualityTier(projection?: LetterProjection | null): 1 | 2 | 3 | 4 | 5 {
+  const tier = (projection as { life_quality_tier?: number } | null)?.life_quality_tier;
+  if (tier === 1 || tier === 2 || tier === 3 || tier === 4 || tier === 5) return tier;
+  return 3;
+}
+
+function buildScenarioKey(
+  input: LetterInput,
+  projection?: LetterProjection | null
+): string {
   const cash = computeCashflowTier(projection);
   const stability = computeStabilityTier(input, projection);
   const load = computeLifeLoadTier(input);
-  return `${cash}-${stability}-${load}`;
+  const quality = getLifeQualityTier(projection);
+  return `${cash}-${stability}-${load}-Q${quality}`;
 }
 
 function severityBand(severity: Severity): "calm" | "caution" | "strained" {
@@ -161,7 +184,8 @@ function severityBand(severity: Severity): "calm" | "caution" | "strained" {
 function line2Pool(
   situation: Situation,
   severity: Severity,
-  scenarioKey: string
+  scenarioKey: string,
+  qualityTier: 1 | 2 | 3 | 4 | 5
 ): Sentence[] {
   const band = severityBand(severity);
   const pool: Sentence[] = [];
@@ -232,14 +256,14 @@ function line2Pool(
     }
   }
 
-  if (scenarioKey.startsWith("LOW-LOW")) {
+  if (scenarioKey.startsWith("LOW-LOW") || qualityTier <= 2) {
     pool.push(
       makeSentence("やりくりに追われて、落ち着かない日が増えたんだ。", "nanda"),
       makeSentence("少しの変化でも気持ちが揺れやすいと思う。", "toOmou")
     );
   }
 
-  if (scenarioKey.startsWith("HIGH-HIGH")) {
+  if (scenarioKey.startsWith("HIGH-HIGH") || qualityTier >= 4) {
     pool.push(
       makeSentence("日々の流れは落ち着いていて、気持ちも整ってるね。", "ne"),
       makeSentence("暮らしは安定してるし、心の余裕も出てきたかな。", "kana")
@@ -252,10 +276,13 @@ function line2Pool(
 function line3Pool(
   input: LetterInput,
   severity: Severity,
-  scenarioKey: string
+  scenarioKey: string,
+  qualityTier: 1 | 2 | 3 | 4 | 5,
+  intent: OtherIntent | null
 ): Sentence[] {
   const goal = input.goal as GoalKey;
   const keyword = goalKeyword(input);
+  const label = goal === "other" ? (intent ? `「${intent.keyword}」` : "目標") : keyword;
   const band = severityBand(severity);
   const pool: Sentence[] = [];
 
@@ -272,9 +299,9 @@ function line3Pool(
       addGoal("{goal}の段取りは見えてきたけど、余裕は少なめかな。", "kana");
       addGoal("{goal}に向けて動いてるけど、不安も残るかも。", "kamo");
     } else {
-      addGoal("{goal}はまだ遠くて、動きが止まりそうな日もあるね。", "ne");
+      addGoal("{goal}はまだ遠くて、余裕がない日も多いね。", "ne");
       addGoal("{goal}に向けて進みたいけど、足元がしんどいかな。", "kana");
-      addGoal("{goal}の準備は続けてるけど、揃ってない感じかも。", "kamo");
+      addGoal("{goal}の準備は続けてるけど、厳しい日があるかも。", "kamo");
     }
   }
 
@@ -288,9 +315,9 @@ function line3Pool(
       addGoal("{goal}の段取りは見えてきたけど、余裕は少なめかな。", "kana");
       addGoal("{goal}に向けて動いてるけど、不安も残るかも。", "kamo");
     } else {
-      addGoal("{goal}はまだ遠くて、気持ちが焦る日もあるね。", "ne");
+      addGoal("{goal}はまだ遠くて、余裕がない日も多いね。", "ne");
       addGoal("{goal}に向けて進みたいけど、足元がしんどいかな。", "kana");
-      addGoal("{goal}の準備は続けてるけど、揃ってない感じかも。", "kamo");
+      addGoal("{goal}の準備は続けてるけど、厳しい日があるかも。", "kamo");
     }
   }
 
@@ -304,9 +331,9 @@ function line3Pool(
       addGoal("{goal}の段取りは見えてきたけど、余裕は少なめかな。", "kana");
       addGoal("{goal}に向けて動いてるけど、不安も残るかも。", "kamo");
     } else {
-      addGoal("{goal}はまだ遠くて、気持ちが焦る日もあるね。", "ne");
+      addGoal("{goal}はまだ遠くて、余裕がない日も多いね。", "ne");
       addGoal("{goal}に向けて進みたいけど、足元がしんどいかな。", "kana");
-      addGoal("{goal}の準備は続けてるけど、揃ってない感じかも。", "kamo");
+      addGoal("{goal}の準備は続けてるけど、厳しい日があるかも。", "kamo");
     }
   }
 
@@ -320,15 +347,13 @@ function line3Pool(
       addGoal("{goal}の段取りは見えてきたけど、余裕は少なめかな。", "kana");
       addGoal("{goal}に向けて動いてるけど、不安も残るかも。", "kamo");
     } else {
-      addGoal("{goal}はまだ遠くて、気持ちが焦る日もあるね。", "ne");
+      addGoal("{goal}はまだ遠くて、余裕がない日も多いね。", "ne");
       addGoal("{goal}に向けて進みたいけど、足元がしんどいかな。", "kana");
-      addGoal("{goal}の準備は続けてるけど、揃ってない感じかも。", "kamo");
+      addGoal("{goal}の準備は続けてるけど、厳しい日があるかも。", "kamo");
     }
   }
 
   if (goal === "other") {
-    const intent = inferOtherGoalIntent(input.goal_other ?? "");
-    const label = `「${intent.keyword}」`;
     if (band === "calm") {
       pool.push(
         makeSentence(`${label}に向けて動きが出てきて、手応えもあるね。`, "ne"),
@@ -343,17 +368,24 @@ function line3Pool(
       );
     } else {
       pool.push(
-        makeSentence(`${label}はまだ遠くて、気持ちが焦る日もあるね。`, "ne"),
+        makeSentence(`${label}はまだ遠くて、余裕がない日も多いね。`, "ne"),
         makeSentence(`${label}に向けて進みたいけど、足元がしんどいかな。`, "kana"),
-        makeSentence(`${label}の準備は続けてるけど、揃ってない感じかも。`, "kamo")
+        makeSentence(`${label}の準備は続けてるけど、厳しい日があるかも。`, "kamo")
       );
     }
   }
 
-  if (scenarioKey.startsWith("LOW-LOW")) {
+  if (scenarioKey.startsWith("LOW-LOW") || qualityTier <= 2) {
     pool.push(
-      makeSentence("目標には向かってるけど、余裕のなさが引っかかるんだ。", "nanda"),
-      makeSentence("目標への動きはあるけど、足元が不安だと思う。", "toOmou")
+      makeSentence(`${label}には向かってるけど、余裕のなさが引っかかるんだ。`, "nanda"),
+      makeSentence(`${label}への動きはあるけど、足元が不安だと思う。`, "toOmou")
+    );
+  }
+
+  if (qualityTier >= 4) {
+    pool.push(
+      makeSentence(`${label}の進め方は落ち着いてきて、選び方も迷いにくいね。`, "ne"),
+      makeSentence(`${label}は見えてきてるし、続け方も整ってきたかな。`, "kana")
     );
   }
 
@@ -377,7 +409,8 @@ function pickSentence(
 function pickLine2Line3(
   line2PoolData: Sentence[],
   line3PoolData: Sentence[],
-  seed: number
+  seed: number,
+  severity: Severity
 ): { line2: Sentence; line3: Sentence } {
   const line2 = pickSentence(line2PoolData, seed);
   const line2Text = line2.text;
@@ -391,6 +424,21 @@ function pickLine2Line3(
   return { line2, line3: fallback };
 }
 
+function ensureStrainedWord(
+  line2: Sentence,
+  line3: Sentence,
+  pool: Sentence[]
+): Sentence {
+  const combined = `${line2.text}${line3.text}`;
+  if (STRAINED_WORDS.some((word) => combined.includes(word))) return line3;
+  const candidate = pool.find(
+    (item) =>
+      STRAINED_WORDS.some((word) => item.text.includes(word)) &&
+      item.ending !== line2.ending
+  );
+  return candidate ?? line3;
+}
+
 function buildLine4(severity: Severity, variant: 0 | 1 | 2): string {
   const variants = LINE4_BY_SEVERITY[severity] ?? LINE4_BY_SEVERITY[1];
   return variants[variant % variants.length];
@@ -402,11 +450,7 @@ function sanitizeKeyword(raw: string): string {
   return cleaned.slice(0, 18);
 }
 
-function inferOtherGoalIntent(goalOther: string): {
-  keyword: string;
-  category: "travel" | "career" | "home" | "health" | "dream" | "skill" | "other";
-  difficulty: 1 | 2 | 3;
-} {
+function inferOtherGoalIntent(goalOther: string): OtherIntent {
   const raw = sanitizeKeyword(goalOther);
   const text = raw.toLowerCase();
   if (/(旅行|世界一周|世界旅行|海外|backpack)/.test(raw)) {
@@ -430,6 +474,26 @@ function inferOtherGoalIntent(goalOther: string): {
   return { keyword: raw || "目標", category: "other", difficulty: 2 };
 }
 
+
+function ensureLine2Prefix(text: string): string {
+  let rest = text.trim();
+  if (rest.startsWith("お元気ですか？")) {
+    rest = rest.slice("お元気ですか？".length);
+  }
+  rest = rest.replace(/^[\s　]+/, "");
+  if (rest.startsWith("こっちは、")) {
+    rest = "こっちは" + rest.slice("こっちは、".length);
+  }
+  if (rest.startsWith("、")) {
+    rest = rest.slice(1);
+  }
+  if (rest.startsWith("こっちは")) {
+    rest = rest.slice("こっちは".length);
+  }
+  rest = rest.replace(/^[\s　]+/, "");
+  return `お元気ですか？こっちは${rest}`;
+}
+
 export function pickTemplateVariant(input: LetterInput): 0 | 1 | 2 {
   const seed =
     input.age * 31 +
@@ -451,24 +515,33 @@ export function buildTemplateLetterVariant(
       : computeGapSeverity({ input, projection });
   const scenarioKey = buildScenarioKey(input, projection);
   const situation = pickSituation(input);
-  const otherIntent =
-    input.goal === "other"
-      ? inferOtherGoalIntent(input.goal_other ?? "")
-      : null;
+  const otherIntent = input.goal === "other" ? inferOtherGoalIntent(input.goal_other ?? "") : null;
   const severity =
     otherIntent && input.goal === "other"
       ? (Math.min(4, severityBase + (otherIntent.difficulty - 1)) as Severity)
       : severityBase;
+  const qualityTier = getLifeQualityTier(projection);
 
-  const line2PoolData = line2Pool(situation, severity, scenarioKey);
-  const line3PoolData = line3Pool(input, severity, scenarioKey);
+  const line2PoolData = line2Pool(situation, severity, scenarioKey, qualityTier);
+  const line3PoolData = line3Pool(
+    input,
+    severity,
+    scenarioKey,
+    qualityTier,
+    otherIntent
+  );
   const seed = hashString(`${scenarioKey}:${input.goal}:${variant}:${severity}`);
-  const { line2, line3 } = pickLine2Line3(line2PoolData, line3PoolData, seed);
+  const picked = pickLine2Line3(line2PoolData, line3PoolData, seed, severity);
+  const line2 = picked.line2;
+  let line3 = picked.line3;
+  if (severity >= 3) {
+    line3 = ensureStrainedWord(line2, line3, line3PoolData);
+  }
   const line4 = buildLine4(severity, variant);
 
   return [
     "十年前のキミへ。",
-    line2.text,
+    ensureLine2Prefix(line2.text),
     line3.text,
     line4,
     REQUIRED_HOOK_SENTENCE,

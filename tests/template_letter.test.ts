@@ -44,6 +44,12 @@ test("template letter satisfies required rules", () => {
   assert.equal(hasRequiredLine6Methods(letter), true);
   assert.ok(letter.includes(REQUIRED_HOOK_SENTENCE));
   assert.ok(letter.includes(REQUIRED_METHODS_SENTENCE));
+  const line2 = letter.split("\n")[1] ?? "";
+  assert.equal(line2.startsWith("お元気ですか？こっちは"), true);
+  assert.equal(/^お元気ですか？こっちは\S/.test(line2), true);
+  assert.equal(line2.includes("こっちは、"), false);
+  assert.equal(line2.includes("こっちは "), false);
+  assert.equal(line2.includes("こっちは　"), false);
 });
 
 test("template variant selection is deterministic", () => {
@@ -182,16 +188,37 @@ test("line2 and line3 endings are distinct", () => {
   const projection = computeProjections(input)[0];
   const letter = buildTemplateLetter(input, projection);
   const lines = letter.split("\n");
-  const endings = ["ね。", "かな。", "って感じ。", "かも。", "なんだ。", "と思う。"];
+  const endings = ["ね。", "かな。", "かも。", "なんだ。", "と思う。"];
   const pickEnding = (line: string) => endings.find((e) => line.endsWith(e)) ?? "";
   const e2 = pickEnding(lines[1] ?? "");
   const e3 = pickEnding(lines[2] ?? "");
   assert.notEqual(e2, "");
   assert.notEqual(e3, "");
   assert.notEqual(e2, e3);
-  const stacked = /(ねかな|かなかも|ねって感じ|かなね|かもかな|ねかも|感じるなんだ|んだって感じ)/;
+  const stacked = /(ねかな|かなかも|ねって感じ|かなね|かもかな|ねかも|感じるなんだ|んだって感じ|って感じ。)/;
   assert.equal(stacked.test(lines[1] ?? ""), false);
   assert.equal(stacked.test(lines[2] ?? ""), false);
+});
+
+test("line2+line3 do not match denylist patterns", () => {
+  const input = {
+    age: 26,
+    household_now: 1,
+    kids_future: 0,
+    annual_income_jpy: 3_200_000,
+    monthly_savings_jpy: 15_000,
+    current_savings_jpy: 200_000,
+    monthly_invest_jpy: 10_000,
+    current_invest_jpy: 100_000,
+    goal: "other" as const,
+    goal_other: "語学"
+  };
+  const projection = computeProjections(input)[0];
+  const letter = buildTemplateLetter(input, projection);
+  const lines = letter.split("\n");
+  const combo = `${lines[1] ?? ""}${lines[2] ?? ""}`;
+  const deny = /(ねかな|かなかも|かなって感じ|かもかな|感じるなんだ|んだって感じ|って感じ。)/;
+  assert.equal(deny.test(combo), false);
 });
 
 test("very far scenario uses strained but common vocabulary", () => {

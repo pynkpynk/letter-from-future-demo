@@ -23,7 +23,7 @@ const SAMPLE_INPUT: LetterInput = {
 };
 
 const DISCLAIMER_REQUIRED =
-  "※支出例の他、ケガ・病気・住宅などの大きな支出、公的負担、諸費用、物価変動などは試算に反映していません。";
+  "※ライフイベント支出例の他、ケガ・病気・住宅などの大きな支出、公的負担、諸費用、物価変動などは試算に反映していません。";
 
 const klee = Klee_One({ subsets: ["latin"], weight: ["400", "600"] });
 
@@ -613,7 +613,9 @@ export default function LetterFromFutureClient() {
               </span>
             </div>
             <div className="mt-4 grid gap-4">
-              {projections?.map((projection) => (
+              {projections?.map((projection) => {
+                const costs = estimateLifeEventCosts(form.kids_future);
+                return (
                 <div
                   key={projection.years}
                   className="rounded-2xl border border-ink/10 bg-white/70 p-4"
@@ -622,7 +624,7 @@ export default function LetterFromFutureClient() {
                     10年後のレンジ
                   </p>
                   <div className="mt-4 grid gap-4 md:grid-cols-2">
-                    <div className="rounded-2xl border border-ink/10 bg-white/80 p-3 text-sm">
+                    <div className="rounded-2xl border border-ink/10 bg-white/80 p-3 text-sm flex flex-col">
                       <p className="text-xs font-semibold text-ink/60">資産</p>
                       <div className="mt-2 space-y-2">
                         <div className="flex justify-between">
@@ -638,61 +640,60 @@ export default function LetterFromFutureClient() {
                             {formatMan(projection.invest_max)}
                           </span>
                         </div>
-                        <div className="mt-2 flex justify-between rounded-xl border-t border-emerald-200 bg-emerald-50/60 px-2 py-2 text-base font-semibold text-emerald-700">
-                          <span>合計</span>
-                          <span>
-                            {formatMan(projection.total_min)}〜
-                            {formatMan(projection.total_max)}
-                          </span>
-                        </div>
+                      </div>
+                      <div aria-hidden="true" className="h-4" />
+                      <div className="mt-auto pt-3 grid grid-cols-[1fr_auto] items-center rounded-xl border-t border-emerald-200 bg-emerald-50/60 px-2 py-2 text-base font-semibold text-emerald-700">
+                        <span>合計</span>
+                        <span className="text-right tabular-nums">
+                          {formatMan(projection.total_min)}〜
+                          {formatMan(projection.total_max)}
+                        </span>
                       </div>
                     </div>
-                    <div className="rounded-2xl border border-ink/10 bg-white/80 p-3 text-sm">
-                      <p className="text-xs font-semibold text-ink/60">支出例</p>
+                    <div className="rounded-2xl border border-ink/10 bg-white/80 p-3 text-sm flex flex-col">
+                      <p className="text-xs font-semibold text-ink/60">ライフイベント支出例</p>
                       <div className="mt-2 space-y-2">
-                        {(() => {
-                          const costs = estimateLifeEventCosts(form.kids_future);
-                          return (
-                            <>
-                              <div className="flex justify-between">
-                                <span>出産（子ども×{form.kids_future}）</span>
-                                <span>
-                                  {formatMan(costs.childbirthMin)}〜
-                                  {formatMan(costs.childbirthMax)}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>引越し</span>
-                                <span>
-                                  {formatMan(costs.movingMin)}〜
-                                  {formatMan(costs.movingMax)}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>車購入</span>
-                                <span>
-                                  {formatMan(costs.carMin)}〜
-                                  {formatMan(costs.carMax)}
-                                </span>
-                              </div>
-                              <div className="mt-2 flex justify-between rounded-xl border-t border-rose-200 bg-rose-50/70 px-2 py-2 text-base font-semibold text-rose-700">
-                                <span>合計目安</span>
-                                <span>
-                                  {formatMan(costs.totalMin)}〜
-                                  {formatMan(costs.totalMax)}
-                                </span>
-                              </div>
-                            </>
-                          );
-                        })()}
+                          <div className="flex justify-between">
+                            <span>出産（子ども×{form.kids_future}）</span>
+                            <span>
+                              {formatMan(costs.childbirthMin)}〜
+                              {formatMan(costs.childbirthMax)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>引越し</span>
+                            <span>
+                              {formatMan(costs.movingMin)}〜
+                              {formatMan(costs.movingMax)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>車購入</span>
+                            <span>
+                              {formatMan(costs.carMin)}〜
+                              {formatMan(costs.carMax)}
+                            </span>
+                          </div>
+                      </div>
+                      <div aria-hidden="true" className="h-4" />
+                      <div className="mt-auto pt-3 grid grid-cols-[1fr_auto] items-center rounded-xl border-t border-rose-200 bg-rose-50/70 px-2 py-2 text-base font-semibold text-rose-700">
+                        <span>合計</span>
+                        <span className="text-right tabular-nums">
+                          {formatMan(costs.totalMin)}〜
+                          {formatMan(costs.totalMax)}
+                        </span>
                       </div>
                     </div>
                   </div>
                   <p className="mt-4 text-xs text-ink/60">
                     {result?.content.disclaimer || DISCLAIMER_REQUIRED}
                   </p>
+                  <p className="mt-2 text-xs text-ink/60">
+                    ※生活収支の試算は、総務省統計局「家計調査年報（家計収支編）2024年」を参考に、関東の平均消費支出（単身：約19.79万円/月、2人以上：約34.99万円/月）を目安として算出しています。
+                  </p>
                 </div>
-              ))}
+              );
+              })}
               {!projections ? (
                 <div className="rounded-2xl border border-dashed border-ink/20 bg-white/40 p-4 text-sm text-ink/60">
                   未来のレンジはここに表示されます。

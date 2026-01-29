@@ -39,9 +39,39 @@ test("invest range stays within min/max ordering", () => {
   }
 });
 
+test("investment contributions are included in invest range", () => {
+  const projections = computeProjections({
+    ...baseInput,
+    current_invest_jpy: 500_000,
+    monthly_invest_jpy: 30_000
+  });
+  const projection = projections[0];
+  assert.ok(projection.invest_min > 2_000_000);
+  assert.ok(projection.invest_max > projection.invest_min);
+});
+
 test("estimateSpendingMonthly uses single household baseline", () => {
   const value = estimateSpendingMonthly(1);
   assert.equal(value, 169_547);
+});
+
+test("lifeQualityTier reflects deficit vs comfort", () => {
+  const deficit = computeProjections({
+    ...baseInput,
+    annual_income_jpy: 2_000_000,
+    household_now: 2,
+    monthly_savings_jpy: 50_000,
+    monthly_invest_jpy: 50_000
+  })[0] as any;
+  const comfortable = computeProjections({
+    ...baseInput,
+    annual_income_jpy: 10_000_000,
+    household_now: 1,
+    monthly_savings_jpy: 0,
+    monthly_invest_jpy: 0
+  })[0] as any;
+  assert.equal(deficit.life_quality_tier, 1);
+  assert.equal(comfortable.life_quality_tier, 5);
 });
 
 test("contribution capping clamps to zero when surplus is negative", () => {

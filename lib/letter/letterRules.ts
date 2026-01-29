@@ -80,6 +80,14 @@ export function computeGapSeverity({
   input: LetterInput;
   projection?: LetterProjection | null;
 }): 0 | 1 | 2 | 3 | 4 {
+  const tier = (projection as { life_quality_tier?: number } | null)?.life_quality_tier;
+  if (typeof tier === "number") {
+    if (tier <= 1) return 4;
+    if (tier === 2) return 3;
+    if (tier === 3) return 2;
+    if (tier === 4) return 1;
+    return 0;
+  }
   if (!projection) return 1;
   const monthlyInputTotal =
     (input.monthly_savings_jpy ?? 0) + (input.monthly_invest_jpy ?? 0);
