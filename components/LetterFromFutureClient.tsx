@@ -317,7 +317,7 @@ export default function LetterFromFutureClient() {
             <div className="mt-6 flex justify-center">
               <button
                 type="button"
-                className="btn-primary"
+                className="btn-habitto-primary"
                 onClick={handleRevealDetails}
               >
                 詳細を見る
@@ -560,7 +560,7 @@ export default function LetterFromFutureClient() {
         <div className="mt-6 flex justify-center">
           <button
             type="button"
-            className="btn-primary"
+            className="btn-habitto-primary"
             onClick={handleSubmit}
             disabled={!canSubmit || loading}
           >
@@ -743,7 +743,7 @@ export default function LetterFromFutureClient() {
                   Habittoアドバイザーチームは、「今」を大切にしながら「未来」に投資し、賢くポジティブに「リスク管理」するあなたのライフプランを全力サポートします！
                 </p>
                 <div className="mt-4 flex flex-col gap-2">
-                  <a href="https://registration.habitto.com/ja" className="btn-primary">
+                  <a href="https://registration.habitto.com/ja" className="btn-habitto-primary">
                     今すぐ無料で相談する！
                   </a>
                   <a href="https://www.habitto.com/advisor/" className="btn-secondary">

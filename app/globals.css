@@ -4,6 +4,9 @@
 
 :root {
   color-scheme: light;
+  --habit-lav: #E8E7FF;
+  --habit-lav-hover: #DCD9FF;
+  --habit-lav-border: #CFCBFF;
 }
 
 body {
@@ -27,11 +30,47 @@ body {
 }
 
 .btn-primary {
-  @apply inline-flex items-center justify-center rounded-full bg-ink px-6 py-3 text-sm font-semibold text-white shadow-glow transition hover:-translate-y-0.5;
+  @apply inline-flex items-center justify-center rounded-full border px-6 py-3 text-sm font-semibold text-ink shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--habit-lav-border)] focus-visible:ring-offset-2 hover:-translate-y-[1px] hover:shadow-md active:translate-y-0;
+  background: linear-gradient(180deg, #F3F2FF 0%, var(--habit-lav) 100%);
+  border-color: var(--habit-lav-border);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(180deg, #EFEFFF 0%, var(--habit-lav-hover) 100%);
+}
+
+.btn-primary-cute {
+  @apply rounded-full;
 }
 
 .btn-secondary {
-  @apply inline-flex items-center justify-center rounded-full border border-ink/20 bg-white px-5 py-2 text-sm font-semibold text-ink transition hover:border-ink/40;
+  @apply inline-flex items-center justify-center rounded-full border px-5 py-2 text-sm font-semibold text-ink shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--habit-lav-border)] focus-visible:ring-offset-2 hover:-translate-y-[1px] hover:shadow-md active:translate-y-0;
+  background-color: #ffffff;
+  border-color: var(--habit-lav-border);
+}
+
+.btn-secondary:hover {
+  background-color: rgba(232, 231, 255, 0.6);
+}
+
+.btn-habitto-primary {
+  @apply inline-flex items-center justify-center rounded-full border px-6 py-3 text-sm font-semibold text-ink shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--habit-lav-border)] focus-visible:ring-offset-2 hover:-translate-y-[1px] hover:shadow-md active:translate-y-0;
+  background: linear-gradient(180deg, #F3F2FF 0%, var(--habit-lav) 100%);
+  border-color: var(--habit-lav-border);
+}
+
+.btn-habitto-primary:hover {
+  background: linear-gradient(180deg, #EFEFFF 0%, var(--habit-lav-hover) 100%);
+}
+
+.btn-habitto-outline {
+  @apply inline-flex items-center justify-center rounded-full border px-5 py-2 text-sm font-semibold text-ink shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--habit-lav-border)] focus-visible:ring-offset-2 hover:-translate-y-[1px] hover:shadow-md active:translate-y-0;
+  background-color: #ffffff;
+  border-color: var(--habit-lav-border);
+}
+
+.btn-habitto-outline:hover {
+  background-color: rgba(232, 231, 255, 0.6);
 }
 
 .badge {
@@ -93,5 +132,15 @@ input[type="number"]::-webkit-inner-spin-button {
   to {
     transform: translateY(0);
     opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-primary,
+  .btn-secondary,
+  .btn-habitto-primary,
+  .btn-habitto-outline {
+    transition: none !important;
+    transform: none !important;
   }
 }
