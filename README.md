@@ -1,48 +1,27 @@
-# A Letter From the Future (demo)
+# A Letter From the Future (Demo) / 未来からの手紙（デモ）
 
-## Setup
+## TL;DR (EN)
+A small Next.js demo where users enter a few numbers and receive:
+- A **7-line “letter from your future self”** (tone changes based on life-quality tier)
+- A **10-year asset projection range**
+- A **consultation CTA** that links to Habitto
 
-```bash
-npm install
-cp .env.example .env.local
-```
+**Demo URL:** https://letter-from-future-demo.vercel.app/ 
 
-Add your OpenAI API key to `.env.local`:
+## TL;DR (JP)
+数値を入力すると、以下を返す Next.js のデモです：
+- **未来の自分からの手紙（7行固定）**（生活余裕のTierでトーンが変化）
+- **10年後の資産予測レンジ**
+- **Habittoへの相談導線（固定リンク）**
 
-```
-OPENAI_API_KEY=your_key_here
-OPENAI_MODEL=gpt-5-mini
-```
+**デモURL：** https://letter-from-future-demo.vercel.app/  
 
-## Run dev server
+---
 
-```bash
-npm run dev
-```
+## Tech Stack / 技術
+- Next.js 14 (App Router)
+- Node.js runtime (API route)
+- OpenAI SDK (server-side)
 
-Open `http://localhost:3000/letter-from-future`.
+---
 
-## API test with curl
-
-```bash
-curl -X POST http://localhost:3000/letter-from-future/api/letter \
-  -H "Content-Type: application/json" \
-  -d '{
-    "age": 32,
-    "household_now": 2,
-    "kids_future": 2,
-    "annual_income_jpy": 4500000,
-    "monthly_savings_jpy": 50000,
-    "current_savings_jpy": 2000000,
-    "monthly_invest_jpy": 30000,
-    "current_invest_jpy": 500000,
-    "goal": "mortgage"
-  }'
-```
-
-## Tests
-
-```bash
-npm run test
-```
-# letter-from-future
