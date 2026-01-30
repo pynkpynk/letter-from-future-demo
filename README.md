@@ -1,6 +1,6 @@
 # A Letter From the Future (Demo) / 未来からの手紙（デモ）
 
-## TL;DR (EN)
+## EN
 A small Next.js demo where users enter a few numbers and receive:
 - A **7-line “letter from your future self”** (tone changes based on life-quality tier)
 - A **10-year asset projection range**
@@ -8,7 +8,7 @@ A small Next.js demo where users enter a few numbers and receive:
 
 **Demo URL:** https://letter-from-future-demo.vercel.app/ 
 
-## TL;DR (JP)
+## JP
 数値を入力すると、以下を返す Next.js のデモです：
 - **未来の自分からの手紙（7行固定）**（生活余裕のTierでトーンが変化）
 - **10年後の資産予測レンジ**
